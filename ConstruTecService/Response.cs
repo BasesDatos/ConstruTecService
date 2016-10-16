@@ -8,7 +8,7 @@ namespace ConstruTecService
     /// <summary>
     /// Clase utilizada para retornar algun mensaje a la página web o cliente que consume el web service
     /// </summary>
-    public class Respuesta
+    public class Response
     {
 
         public string estado { get; set; }
@@ -18,7 +18,7 @@ namespace ConstruTecService
         /// Constructor que recibe el mensaje
         /// </summary>
         /// <param name="pEstado"></param>
-        public Respuesta(string pEstado)
+        public Response(string pEstado)
         {
             this.estado = pEstado;
         }
