@@ -4,7 +4,9 @@ using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Web.Http;
+using System.Data;
 using Npgsql;
+using NpgsqlTypes;
 using ConstruTecService.Models;
 
 namespace ConstruTecService.Controllers
@@ -12,6 +14,94 @@ namespace ConstruTecService.Controllers
     [RoutePrefix("users")]
     public class UsuarioController : ApiController
     {
+
+        /// <summary>
+        /// Método que permite el registro de los usuarios, tanto usuario generales y administradores,
+        /// como ingenieros
+        /// </summary>
+        /// <param name="pUser"></param>
+        /// <returns></returns>
+        [Route("register")]
+        [HttpPost]
+        public IHttpActionResult register(Usuario pUser)
+        {
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("registrarusuario", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pusuario", NpgsqlDbType.Text).Value = pUser._usuario;
+                command.Parameters.AddWithValue("@pnombre", NpgsqlDbType.Text).Value = pUser._nombre;
+                command.Parameters.AddWithValue("@ppapellido", NpgsqlDbType.Text).Value = pUser._pApellido;
+                command.Parameters.AddWithValue("@psapellido", NpgsqlDbType.Text).Value = pUser._sApellido;
+                command.Parameters.AddWithValue("@pcedula", NpgsqlDbType.Bigint).Value = pUser._cedula;
+                command.Parameters.AddWithValue("@pcontrasena", NpgsqlDbType.Text).Value = pUser._contrasena;
+                command.Parameters.AddWithValue("@ptelefono", NpgsqlDbType.Text).Value = pUser._telefono;
+
+                //Si el valor del atributo "_codigo" es el valor por defecto, se trata de un usuario general o administrador
+                if(pUser._codigo.Equals("")) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
+                else { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = pUser._codigo; }
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    reader.Read();
+
+                    return Json(new Response(reader.GetString(0)));
+                }
+                catch(NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+            }
+        }
+
+
+
+        /// <summary>
+        /// Método que permite a un usuario iniciar sesión en la página web
+        /// </summary>
+        /// <param name="pUser"></param>
+        /// <returns></returns>
+        [Route("login")]
+        [HttpPost]
+        public IHttpActionResult login(Usuario pUser) {
+
+            List<Rol> _roles = new List<Rol>();
+
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("iniciarsesion", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pusuario", NpgsqlDbType.Text).Value = pUser._usuario;
+                command.Parameters.AddWithValue("@pcontrasena", NpgsqlDbType.Text).Value = pUser._contrasena;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+
+                    while (reader.Read())
+                    {
+                        if (reader.GetString(0) == Constants.ERROR_USER_PASS) break;
+                        Rol rol = new Rol();
+                        rol._role = reader.GetString(0);
+                        _roles.Add(rol);
+                    }
+
+                    if (_roles.Count < 1) { return Json(new Response(Constants.ERROR_USER_PASS)); }
+                    else { return Json(_roles); }
+
+                }
+                catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+            }
+
+        }
+
+
+
+
 
         /// <summary>
         /// Método que permite obtener la información de usuarios generales, ingenieros y administradores
@@ -62,7 +152,7 @@ namespace ConstruTecService.Controllers
             {
 
                 NpgsqlCommand command = new NpgsqlCommand(procedure, connection);
-                command.CommandType = System.Data.CommandType.StoredProcedure;
+                command.CommandType = CommandType.StoredProcedure;
 
                 try
                 {
