@@ -16,6 +16,45 @@ namespace ConstruTecService.Controllers
     {
 
         /// <summary>
+        /// Método que permite a los usuario que ya esta registrados en la base de datos, poder
+        /// crear una nueva cuenta con un rol distinto
+        /// </summary>
+        /// <param name="pUser"></param>
+        /// <returns></returns>
+        [Route("newRol")]
+        [HttpPost]
+        public IHttpActionResult newRol(Usuario pUser)
+        {
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("registrarnuevacuenta", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pusuario", NpgsqlDbType.Text).Value = pUser._usuario;
+                command.Parameters.AddWithValue("@pcontrasena", NpgsqlDbType.Text).Value = pUser._contrasena;
+                command.Parameters.AddWithValue("@prol", NpgsqlDbType.Integer).Value = pUser._rol;
+
+                //Si el código del usuario tiene el valor por defecto, se trata de una nueva cuenta como usuario general
+                //o administrador; si es un ingeniero, la BD se encarga de manejar el error
+                if(pUser._codigo.Equals("")) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
+                else { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = pUser._codigo; }
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    reader.Read();
+
+                    return Json(new Response(reader.GetString(0)));
+                }
+                catch(NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+            }
+        }
+
+
+
+        /// <summary>
         /// Método que permite el registro de los usuarios, tanto usuario generales y administradores,
         /// como ingenieros
         /// </summary>
@@ -37,9 +76,10 @@ namespace ConstruTecService.Controllers
                 command.Parameters.AddWithValue("@pcedula", NpgsqlDbType.Bigint).Value = pUser._cedula;
                 command.Parameters.AddWithValue("@pcontrasena", NpgsqlDbType.Text).Value = pUser._contrasena;
                 command.Parameters.AddWithValue("@ptelefono", NpgsqlDbType.Text).Value = pUser._telefono;
+                command.Parameters.AddWithValue("@prol", NpgsqlDbType.Integer).Value = pUser._rol;
 
-                //Si el valor del atributo "_codigo" es el valor por defecto, se trata de un usuario general o administrador
-                if(pUser._codigo.Equals("")) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
+                //Si el valor del atributo "_rol" no es 2 (Ingeniero), se trata de un usuario general o administrador
+                if (pUser._rol != 2) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
                 else { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = pUser._codigo; }
 
                 try

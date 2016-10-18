@@ -19,5 +19,6 @@ namespace ConstruTecService.Models
         public string _contrasena { get; set; }
         public string _codigo { get; set; } = "";
         public string _telefono { get; set; }
+        public int _rol { get; set; }
     }
 }
