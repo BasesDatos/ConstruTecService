@@ -17,6 +17,7 @@ namespace ConstruTecService.Models
         public string _descripcion { get; set; }
         public int _cantidadDisponible { get; set; }
         public Decimal _precio { get; set; }
+        public string _nombreCategoria { get; set; }
 
     }
 }
