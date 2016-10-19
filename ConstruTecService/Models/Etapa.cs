@@ -14,6 +14,12 @@ namespace ConstruTecService.Models
         public int _id { get; set; }
         public string _nombre { get; set; }
         public string _descripcion { get; set; }
+        public Decimal _costo { get; set; }
+        public bool _estado { get; set; }
+        public DateTime _fInicio { get; set; }
+        public DateTime _fFin { get; set; }
+        public int _idProyecto { get; set; }
+        public int _idEtapa { get; set; }
 
     }
 }
