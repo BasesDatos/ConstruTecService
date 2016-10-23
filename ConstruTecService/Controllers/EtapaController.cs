@@ -8,6 +8,7 @@ using Npgsql;
 using NpgsqlTypes;
 using System.Web.Http;
 using ConstruTecService.Models;
+using System.Text;
 
 namespace ConstruTecService.Controllers
 {
@@ -15,19 +16,61 @@ namespace ConstruTecService.Controllers
     public class EtapaController : ApiController
     {
 
+        /// <summary>
+        /// Método que permite obtener el listado con todas las etapas ofrecidas por el sistema, junto con las etapas
+        /// que hallan sido agregadas luego por ingenieros o administradores
+        /// </summary>
+        /// <returns></returns>
+        [Route("all")]
+        [HttpGet]
+        public IHttpActionResult all()
+        {
+            List<Etapa> stages = new List<Etapa>();
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("listaretapas", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        Etapa stage = new Etapa();
+                        stage._id = reader.GetInt32(0);
+                        stage._nombre = reader.GetString(1);
+                        stage._descripcion = reader.GetString(2);
+                        stages.Add(stage);
+                    }
+
+                    return Json(stages);
+                }
+                catch(NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+            }
+        }
+
+
+        /// <summary>
+        /// Método que permite asociar una etapa a un proyecto, junto con información como la fecha de inicio
+        /// y finalización de la misma
+        /// </summary>
+        /// <param name="pEtapa"></param>
+        /// <returns></returns>
         [Route("associateStage")]
         [HttpPost]
         public IHttpActionResult associateStage(Etapa pEtapa)
         {
             using (NpgsqlConnection connection = DataBase.getConnection())
             {
-                NpgsqlCommand command = new NpgsqlCommand("asociaretapa", connection);
-                command.CommandType = CommandType.StoredProcedure;
 
-                command.Parameters.AddWithValue("@pidproyecto", NpgsqlDbType.Integer).Value = pEtapa._idProyecto;
-                command.Parameters.AddWithValue("@pidetapa", NpgsqlDbType.Integer).Value = pEtapa._idEtapa;
-                command.Parameters.AddWithValue("@pfinicio", NpgsqlDbType.Date).Value = pEtapa._fInicio;
-                command.Parameters.AddWithValue("@pffin", NpgsqlDbType.Date).Value = pEtapa._fFin;
+                StringBuilder parameters = new StringBuilder();
+                parameters.AppendFormat("select * from asociarEtapa({0}, {1},'{2}','{3}')", pEtapa._idProyecto, 
+                    pEtapa._idEtapa, pEtapa._fInicio.ToString("dd/MM/yyyy"), pEtapa._fFin.ToString("dd/MM/yyyy"));
+
+                NpgsqlCommand command = new NpgsqlCommand(parameters.ToString(), connection);
+                command.CommandType = CommandType.Text;
 
                 try
                 {
@@ -37,11 +80,10 @@ namespace ConstruTecService.Controllers
 
                     return Json(new Response(reader.GetString(0)));
                 }
-                catch (NpgsqlException ex) { return Json(new Response(ex.Message)); } //ARREGLAR ERROR CON TIPO DE DATO DE LAS FECHAS
+                catch (NpgsqlException ex) { return Json(new Response(ex.Message)); }
                 finally { connection.Close(); }
             }
         }
-
 
 
 
