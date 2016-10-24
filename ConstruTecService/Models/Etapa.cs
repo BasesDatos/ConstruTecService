@@ -19,7 +19,8 @@ namespace ConstruTecService.Models
         public DateTime _fInicio { get; set; }
         public DateTime _fFin { get; set; }
         public int _idProyecto { get; set; }
-        public int _idEtapa { get; set; }
+        public List<Material> _materiales { get; set; }
+        //public int _idEtapa { get; set; }
 
     }
 }

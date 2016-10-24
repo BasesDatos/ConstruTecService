@@ -17,6 +17,51 @@ namespace ConstruTecService.Controllers
     {
 
         /// <summary>
+        /// Método que permite agregar los materiales que se utilizaran en un etapa
+        /// Con esta información, cuando el usuario lo desee se hara el pedido correspondiente
+        /// en el web service de EPATEC
+        /// </summary>
+        /// <param name="pEtapa"></param>
+        /// <returns></returns>
+        [Route("addMaterials")]
+        [HttpPost]
+        public IHttpActionResult addMaterials(Etapa pEtapa)
+        {
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                try
+                {
+                    int result = 0;
+                    List<Material> materiales = pEtapa._materiales;
+                    for(int i=0; i<materiales.Count(); i++)
+                    {
+                        NpgsqlCommand command = new NpgsqlCommand("agregarmaterial", connection);
+                        command.CommandType = CommandType.StoredProcedure;
+
+                        command.Parameters.AddWithValue("@pidmaterial", NpgsqlDbType.Integer).Value = materiales.ElementAt(i)._id;
+                        command.Parameters.AddWithValue("@pnombrematerial", NpgsqlDbType.Text).Value = materiales.ElementAt(i)._nombre;
+                        command.Parameters.AddWithValue("@pidrelacionetapa", NpgsqlDbType.Integer).Value = pEtapa._id;
+                        command.Parameters.AddWithValue("@pprecio", NpgsqlDbType.Integer).Value = materiales.ElementAt(i)._precio;
+                        command.Parameters.AddWithValue("@pcantidad", NpgsqlDbType.Integer).Value = materiales.ElementAt(i)._cantidadDisponible;
+                        connection.Open();
+                        NpgsqlDataReader reader = command.ExecuteReader();
+                        reader.Read();
+                        if(reader.GetInt32(0) > 0) { result++; }
+                        connection.Close();
+                    }
+
+                    if (result == materiales.Count) { return Json(new Response("Materiales agregados con éxito")); }
+                    else return Json(new Response("Algunos materiales no fueron agregados debido a  un error"));
+                }
+                catch(NpgsqlException ex) { return Json(new Response(ex.Message)); }
+                //finally { connection.Close(); }
+            }
+        }
+
+
+
+
+        /// <summary>
         /// Método que permite obtener el listado con todas las etapas ofrecidas por el sistema, junto con las etapas
         /// que hallan sido agregadas luego por ingenieros o administradores
         /// </summary>
@@ -67,7 +112,7 @@ namespace ConstruTecService.Controllers
 
                 StringBuilder parameters = new StringBuilder();
                 parameters.AppendFormat("select * from asociarEtapa({0}, {1},'{2}','{3}')", pEtapa._idProyecto, 
-                    pEtapa._idEtapa, pEtapa._fInicio.ToString("dd/MM/yyyy"), pEtapa._fFin.ToString("dd/MM/yyyy"));
+                    pEtapa._id, pEtapa._fInicio.ToString("dd/MM/yyyy"), pEtapa._fFin.ToString("dd/MM/yyyy"));
 
                 NpgsqlCommand command = new NpgsqlCommand(parameters.ToString(), connection);
                 command.CommandType = CommandType.Text;
@@ -78,9 +123,16 @@ namespace ConstruTecService.Controllers
                     NpgsqlDataReader reader = command.ExecuteReader();
                     reader.Read();
 
-                    return Json(new Response(reader.GetString(0)));
+                    int result = reader.GetInt32(0);
+                    switch (result)
+                    {
+                        case -1: return Json(new Response("La etapa a asociar no existe"));
+                        case -2: return Json(new Response("El proyecto asociado no existe"));
+                        default: return Json(new Etapa { _id = result });
+                    }
+
                 }
-                catch (NpgsqlException ex) { return Json(new Response(ex.Message)); }
+                catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
                 finally { connection.Close(); }
             }
         }
