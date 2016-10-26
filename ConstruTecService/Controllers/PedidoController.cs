@@ -56,8 +56,8 @@ namespace ConstruTecService.Controllers
                     if (counter > 0)
                     {
                         this.postOnEPATEC(order);
-                        EtapaController controller = new EtapaController(); //ARREGLAR ESTA PETICION!!!!!!!!
-                        return controller.endStage(pPedido._idRelacionEtapa);
+                        return Json(new Response(this.finishStage(pPedido._idRelacionEtapa)));
+                      
                     }
                     else return Json(new Response("El pedido no se logro completar"));
                     
@@ -67,7 +67,34 @@ namespace ConstruTecService.Controllers
             }
         }
 
-   
+
+
+        public string finishStage(int id)
+        {
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("marcaretapa", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pidrelacion", NpgsqlDbType.Integer).Value = id;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    reader.Read();
+                    var result = reader.GetString(0);
+
+                    return result;
+                }
+                catch (NpgsqlException ex) { return Constants.ERROR_DATABASE_CONNECTION; }
+                finally { connection.Close(); }
+
+            }
+        }
+
+
+
 
 
         /// <summary>
