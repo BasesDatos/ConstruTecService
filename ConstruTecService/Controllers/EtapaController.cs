@@ -17,6 +17,40 @@ namespace ConstruTecService.Controllers
     {
 
         /// <summary>
+        /// Método que permite marcar una etapa como finalizada
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Route("endStage")]
+        [HttpGet]
+        public IHttpActionResult endStage(int id)
+        {
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("marcaretapa", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pidrelacion", NpgsqlDbType.Integer).Value = id;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    reader.Read();
+                    var result = reader.GetString(0);
+
+                    return Json(new Response(result));
+                }
+                catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+
+            }
+        }
+
+
+
+
+        /// <summary>
         /// Método que permite agregar los materiales que se utilizaran en un etapa
         /// Con esta información, cuando el usuario lo desee se hara el pedido correspondiente
         /// en el web service de EPATEC
