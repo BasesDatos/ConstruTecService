@@ -17,6 +17,45 @@ namespace ConstruTecService.Controllers
     {
 
         /// <summary>
+        /// Método que permite obtener los materiales de una étapa
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns></returns>
+        [Route("getMaterialsStage/{id}")]
+        [HttpGet]
+        public IHttpActionResult getMaterialsStage(int id)
+        {
+            List<Material> materials = new List<Material>();
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("obtenermaterialesetapa", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pidrelacion", connection).Value = id;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    while (reader.Read())
+                    {
+                        Material material = new Material();
+                        material._id = reader.GetInt64(0);
+                        material._nombre = reader.GetString(1);
+                        material._precio = reader.GetDecimal(2);
+                        material._cantidadDisponible = reader.GetInt32(3);
+                        materials.Add(material);
+                    }
+                    return Json(materials);
+                }
+                catch (NpgsqlException ex) { return Json(2); }
+                finally { connection.Close(); }
+            }
+        }
+
+
+
+        /// <summary>
         /// Método que permite marcar una etapa como finalizada
         /// </summary>
         /// <param name="id"></param>
@@ -43,7 +82,6 @@ namespace ConstruTecService.Controllers
                 }
                 catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
                 finally { connection.Close(); }
-
             }
         }
 

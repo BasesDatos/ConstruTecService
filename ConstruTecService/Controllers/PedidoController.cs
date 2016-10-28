@@ -68,7 +68,12 @@ namespace ConstruTecService.Controllers
         }
 
 
-
+        /// <summary>
+        /// Método que marca una etapa como finalizada cuando se realiza el pedido de los
+        /// materiales al core ferretero de EPATEC
+        /// </summary>
+        /// <param name="id"></param>
+        /// <returns>string</returns>
         public string finishStage(int id)
         {
             using (NpgsqlConnection connection = DataBase.getConnection())

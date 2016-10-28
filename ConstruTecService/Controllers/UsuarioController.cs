@@ -15,6 +15,54 @@ namespace ConstruTecService.Controllers
     public class UsuarioController : ApiController
     {
 
+
+        /// <summary>
+        /// Método que permite obtener todos los proyectos asociados a un usuario, llamando al 
+        /// procedimiento almacenado "obtenerProyectosUsuario"
+        /// </summary>
+        /// <param name="pUser"></param>
+        /// <returns></returns>
+        [Route("getProjects")]
+        [HttpGet]
+        public IHttpActionResult getProjects(string pUser)
+        {
+            List<Proyecto> projects = new List<Proyecto>();
+            using (NpgsqlConnection connection = DataBase.getConnection())
+            {
+                NpgsqlCommand command = new NpgsqlCommand("obtenerproyectosusuario", connection);
+                command.CommandType = CommandType.StoredProcedure;
+
+                command.Parameters.AddWithValue("@pusuario", NpgsqlDbType.Text).Value = pUser;
+
+                try
+                {
+                    connection.Open();
+                    NpgsqlDataReader reader = command.ExecuteReader();
+                    int counter = 0;
+                    while (reader.Read())
+                    {
+                        Proyecto project = new Proyecto();
+                        project._nombre = reader.GetString(0);
+                        project._estado = reader.GetBoolean(1);
+                        project._costo = reader.GetDecimal(2);
+                        project._provincia = reader.GetString(3);
+                        project._canton = reader.GetString(4);
+                        project._id = reader.GetInt32(5);
+                        projects.Add(project);
+                        counter++;
+                    }
+
+                    if (counter > 0) { return Json(projects); }
+                    else { return Json(new Response("El usuario no tiene proyectos asociados")); }
+                }
+                catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                finally { connection.Close(); }
+            }
+        }
+
+
+
+
         /// <summary>
         /// Método que permite a los usuario que ya esta registrados en la base de datos, poder
         /// crear una nueva cuenta con un rol distinto
@@ -129,11 +177,11 @@ namespace ConstruTecService.Controllers
                         _roles.Add(rol);
                     }
 
-                    if (_roles.Count < 1) { return Json(new Response(Constants.ERROR_USER_PASS)); }
+                    if (_roles.Count < 1) { return Json(1); }
                     else { return Json(_roles); }
 
                 }
-                catch (NpgsqlException ex) { return Json(new Response(Constants.ERROR_DATABASE_CONNECTION)); }
+                catch (NpgsqlException ex) { return Json(2); }
                 finally { connection.Close(); }
             }
 
