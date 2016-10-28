@@ -82,9 +82,7 @@ namespace ConstruTecService.Controllers
                 command.Parameters.AddWithValue("@pcontrasena", NpgsqlDbType.Text).Value = pUser._contrasena;
                 command.Parameters.AddWithValue("@prol", NpgsqlDbType.Integer).Value = pUser._rol;
 
-                //Si el código del usuario tiene el valor por defecto, se trata de una nueva cuenta como usuario general
-                //o administrador; si es un ingeniero, la BD se encarga de manejar el error
-                if(pUser._codigo.Equals("")) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
+                if(pUser._rol != 2) { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = DBNull.Value; }
                 else { command.Parameters.AddWithValue("@pcodigo", NpgsqlDbType.Text).Value = pUser._codigo; }
 
                 try

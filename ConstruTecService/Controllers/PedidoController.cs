@@ -143,7 +143,11 @@ namespace ConstruTecService.Controllers
 
 
 
-
+        /// <summary>
+        /// Método para obtener el costo de una etapa
+        /// </summary>
+        /// <param name="pId"></param>
+        /// <param name="pPedido"></param>
         public void getOrderDetails(int pId, PedidoEPATEC pPedido)
         {
             using (NpgsqlConnection connection = DataBase.getConnection())
